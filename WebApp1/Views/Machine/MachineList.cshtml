@@ -1,0 +1,158 @@
+﻿
+@{
+    ViewBag.Title = "Machine";
+}
+
+<style>
+    table, th, td {
+        border: 1px solid black;
+        text-align: center;
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
+
+    tr {
+        border: 2px solid black;
+    }
+</style>
+
+<h2>Machine</h2>
+<br>
+
+@using (Html.BeginForm("MachineList", "Machine", FormMethod.Post))
+{
+<div>
+    Sort By: <br>
+    Name: @Html.RadioButton("SortBy", "Name")  <br>
+    CPU: @Html.RadioButton("SortBy", "CPU")  <br>
+    RAM: @Html.RadioButton("SortBy", "RAM")  <br>
+    % Free: @Html.RadioButton("SortBy", "PercentFree")  <br>
+    Space Free: @Html.RadioButton("SortBy", "SpaceFree")  <br>
+</div>
+
+    <input type="submit" value="Sort"/>
+}
+
+<br>
+
+    <table>
+        <tr>
+            <th></th>
+            <th> CPU Threshold  </th>
+            <th> Free Space Threshold  </th>
+            <th> Free Space % Threshold  </th>
+            <th> RAM Threshold  </th>
+            <th> Up Time Threshold  </th>
+        </tr>
+        @{ var threshold = ViewBag.Thresholds; }
+        @{  var machines = ViewBag.Machines; }
+        @for (int i = 0; i < threshold.cpuLimit.Length; i++)
+        {
+        <tr>
+
+            @if (i == 0)
+            {
+                    <td> "Warning" </td>
+            }
+            else
+            {
+                    <td> "Critical" </td>
+            }
+            <td> @threshold.cpuLimit[i] %</td>
+            <td> @threshold.freeLimit[i] bytes ( @threshold.getBytes(threshold.freeLimit[i]) )</td>
+            <td> @threshold.percentLimit[i] %</td>
+            <td> @threshold.ramLimit[i] %</td>
+            <td> @threshold.upTimeLimit[i] days</td>
+
+        </tr>
+        }
+
+    </table>
+
+<br>
+
+<table>
+    <tr>
+        <th> Machine Name  </th>
+        <th> Machine IP  </th>
+        <th> Machine UpTime  </th>
+        <th> CPU % Usage  </th>
+        <th> RAM % Usage  </th>
+        <th> Drive Letter  </th>
+        <th> Drive Total  </th>
+        <th> Drive Free  </th>
+        <th> Drive % Free  </th>
+    </tr>
+    @foreach (var machine in ViewBag.Machines)
+    {
+        var newRowspan = machine.machineStats[0].machineDrives.Count + 1;
+
+        var days = machine.getDays(machine.machineUpTime);
+
+        var upTimeStyle = "";
+        if (days > ViewBag.Thresholds.upTimeLimit[1]) { upTimeStyle = "background-color: red;"; }
+        else if (days > ViewBag.Thresholds.upTimeLimit[0]) { upTimeStyle = "background-color: yellow;"; }
+        else { upTimeStyle = "border: 1px solid black"; }
+
+
+
+        
+    <tr>
+        <br>
+        <td rowspan="@newRowspan"> @Html.Raw(machine.machineName)  </td>
+        <td rowspan="@newRowspan"> @Html.Raw(machine.machineIp)  </td>
+        <td rowspan="@newRowspan" style="@upTimeStyle"> @Html.Raw(machine.machineUpTime)  </td>
+
+        @foreach (var stat in machine.machineStats)
+        {
+
+
+        var cpuStyle = "";
+        if (stat.cpuPercent > ViewBag.Thresholds.cpuLimit[1]) { cpuStyle = "background-color: red;"; }
+        else if (stat.cpuPercent > ViewBag.Thresholds.cpuLimit[0]) { cpuStyle = "background-color: yellow;"; }
+        else { upTimeStyle = "border: 1px solid black"; }
+
+        var ramStyle = "";
+        if (stat.ramPercent > ViewBag.Thresholds.ramLimit[1]) { ramStyle = "background-color: red;"; }
+        else if (stat.ramPercent > ViewBag.Thresholds.ramLimit[0]) { ramStyle = "background-color: yellow;"; }
+        else { upTimeStyle = "border: 1px solid black"; }
+
+
+
+        <td rowspan="@newRowspan" style="@cpuStyle"> @Html.Raw(stat.cpuPercent + "%")  </td>
+        <td rowspan="@newRowspan" style="@ramStyle"> @Html.Raw(stat.ramPercent + "%")  </td>
+
+
+
+
+    foreach (var drive in stat.machineDrives)
+    {
+        var bytes = drive.getBytes(drive.driveTotal, drive.driveFree);
+
+        var freeSpaceStyle = "";
+        if (drive.driveFree < ViewBag.Thresholds.freeLimit[1] && drive.drivePercent < 50) { freeSpaceStyle = "background-color: red;"; }
+        else if (drive.driveFree < ViewBag.Thresholds.freeLimit[0] && drive.drivePercent < 50) { freeSpaceStyle = "background-color: yellow;"; }
+        else { upTimeStyle = "border: 1px solid black"; }
+
+        var freePercentStyle = "";
+        if (drive.drivePercent < ViewBag.Thresholds.percentLimit[1]) { freePercentStyle = "background-color: red;"; }
+        else if (drive.drivePercent < ViewBag.Thresholds.percentLimit[0]) { freePercentStyle = "background-color: yellow;"; }
+        else { upTimeStyle = "border: 1px solid black"; }
+
+<tr>
+                        <td> @Html.Raw(drive.driveName)  </td>
+                        <td> @Html.Raw(bytes[0])  </td>
+                        <td style="@freeSpaceStyle"> @Html.Raw(bytes[1])  </td>
+                        <td style="@freePercentStyle"> @Html.Raw(drive.drivePercent + "%")  </td>
+                    </tr>
+                }
+            }
+
+
+
+            </tr>
+        }
+</table>
+
